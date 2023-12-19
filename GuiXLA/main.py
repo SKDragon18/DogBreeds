@@ -20,24 +20,30 @@ def change_scaling_event(new_scaling: str):
 
 # pre_model=None
 
-def apply_grayscale(image,height,width):
+def apply_grayscale(image,height,width,key=0):#model nhận hình đen trắng
     new_image=image.copy()
     if image.mode=='RGB':
         new_image=new_image.convert("L")
     new_image=new_image.resize((height,width),resample=Image.BILINEAR)
     new_image=np.array(new_image)
     new_image=np.uint8(new_image)
-    new_image=new_image.reshape(1,height,width,1).repeat(3,axis=-1)
+    if key==1:
+        new_image=new_image.reshape(1,height,width,1)
+    else:
+        new_image=new_image.reshape(1,height,width,1).repeat(3,axis=-1)
     new_image=new_image/255.0
     print(new_image.shape)
     return new_image
 
-def apply_color(image,height,width):
+def apply_color(image,height,width):#model nhận hình màu
     new_image=image.copy()
     new_image=new_image.resize((height,width),resample=Image.BILINEAR)
     new_image=np.array(new_image)
     new_image=np.uint8(new_image)
-    new_image=new_image.reshape(1,height,width,3)
+    if image.mode=='L':
+        new_image=new_image.reshape(1,height,width,1).repeat(3,axis=-1)
+    else:
+        new_image=new_image.reshape(1,height,width,3)
     new_image=new_image/255.0
     print(new_image.shape)
     return new_image
@@ -195,17 +201,22 @@ class App(customtkinter.CTk):
     
     def predict(self):
         if self.model is None or self.image is None:
-            self.entry.insert("end","/please load image and model!!")
+            self.entry.delete(0,customtkinter.END)
+            self.entry.insert("end","please load image and model!!")
         else:
             if self.mode=='Gray':
-                pred_image=apply_grayscale(self.image,224,224)
+                if 'cnn' in self.model_status._text:
+                    pred_image=apply_grayscale(self.image,224,224,1)
+                else:
+                    pred_image=apply_grayscale(self.image,224,224)
             else:
                 pred_image=apply_color(self.image,224,224)
             predict=self.model.predict(pred_image)
             y_pred=np.argmax(predict,axis=1)[0]
             print(predict)
             max=np.round(np.max(predict)*100,2)
-            self.entry.insert("end","<=="+self.classes[y_pred]+'    '+str(max)+'%')
+            self.entry.delete(0,customtkinter.END)
+            self.entry.insert("end","==>"+self.classes[y_pred]+'    '+str(max)+'%')
 
     @staticmethod
     def change_appearance_mode_event(new_appearance_mode: str):
