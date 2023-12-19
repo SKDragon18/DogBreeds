@@ -13,6 +13,9 @@ import tensorflow_hub as hub
 customtkinter.set_appearance_mode("System")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
 
+#kích cỡ ảnh hiển thị
+HEIGHT=350
+WIDTH=400
 
 def change_scaling_event(new_scaling: str):
     new_scaling_float = int(new_scaling.replace("%", "")) / 100
@@ -32,7 +35,7 @@ def apply_grayscale(image,height,width,key=0):#model nhận hình đen trắng
     else:
         new_image=new_image.reshape(1,height,width,1).repeat(3,axis=-1)
     new_image=new_image/255.0
-    print(new_image.shape)
+    print('image_shape: ',new_image.shape)
     return new_image
 
 def apply_color(image,height,width):#model nhận hình màu
@@ -45,7 +48,7 @@ def apply_color(image,height,width):#model nhận hình màu
     else:
         new_image=new_image.reshape(1,height,width,3)
     new_image=new_image/255.0
-    print(new_image.shape)
+    print('image_shape: ',new_image.shape)
     return new_image
 
 class App(customtkinter.CTk):
@@ -122,6 +125,9 @@ class App(customtkinter.CTk):
         self.forecast_image = customtkinter.CTkLabel(self.frame, text="")
         self.forecast_image.grid(row=0, column=0, sticky="nsew")
 
+        self.label_image = customtkinter.CTkLabel(self.frame, text="")
+        self.label_image.grid(row=0, column=2, sticky="nsew")
+
     def change(self):
         if self.image is None:
             return
@@ -131,8 +137,8 @@ class App(customtkinter.CTk):
             pure_image=pure_image.convert("L")
         else:
             pure_image=self.old_image.copy()
-        w_image = pure_image.width
-        h_image = pure_image.height
+        w_image = WIDTH
+        h_image = HEIGHT
         image = customtkinter.CTkImage(light_image=pure_image, dark_image=pure_image,size=(w_image, h_image))
         self.forecast_image.configure(image=image)
         self.image=pure_image
@@ -146,8 +152,8 @@ class App(customtkinter.CTk):
             clahe_16=cv2.createCLAHE(clipLimit=2.0,tileGridSize=(16,16))
             temp_image=clahe_16.apply(temp_image)
             temp_image=Image.fromarray(temp_image)
-            w_image = temp_image.width
-            h_image = temp_image.height
+            w_image = WIDTH
+            h_image = HEIGHT
             image = customtkinter.CTkImage(light_image=temp_image, dark_image=temp_image,size=(w_image, h_image))
             self.forecast_image.configure(image=image)
             self.image=temp_image
@@ -158,25 +164,45 @@ class App(customtkinter.CTk):
             temp_image=np.array(temp_image)
             temp_image=cv2.medianBlur(temp_image,3)
             temp_image=Image.fromarray(temp_image)
-            w_image = temp_image.width
-            h_image = temp_image.height
+            w_image = WIDTH
+            h_image = HEIGHT
             image = customtkinter.CTkImage(light_image=temp_image, dark_image=temp_image,size=(w_image, h_image))
             self.forecast_image.configure(image=image)
             self.image=temp_image
 
-    def load_image(self):
+    def up_label_image(self,label):
         try:
-            file_path_image = filedialog.askopenfilename()
+            file_path_image = 'image/'+label+'.jpg'
             pure_image = Image.open(file_path_image)
-            w_image = pure_image.width
-            h_image = pure_image.height
+            w_image = WIDTH
+            h_image = HEIGHT
             image = customtkinter.CTkImage(light_image=pure_image, dark_image=pure_image,size=(w_image, h_image))
-            self.forecast_image.configure(image=image)
-            self.image=pure_image
+            self.label_image.configure(image=image)
+            self.label_image.grid()
         except Exception as e:
             print(e)
-            self.image = None
-            self.forecast_image.configure(image=None)
+            self.entry.insert("end","==> error! ")
+            self.entry.insert("end",e)
+
+    def load_image(self):
+        try:
+            
+            file_path_image = filedialog.askopenfilename()
+            pure_image = Image.open(file_path_image)
+            w_image = WIDTH
+            h_image = HEIGHT
+            image = customtkinter.CTkImage(light_image=pure_image, dark_image=pure_image,size=(w_image, h_image))
+            self.forecast_image.configure(image=image)
+            self.forecast_image.grid()
+            self.label_image.grid_remove()
+
+            self.image=pure_image#lưu lại ảnh
+            
+            
+        except Exception as e:
+            print(e)
+            # self.image = None
+            # self.forecast_image.configure(image=None)
 
     def load_model(self):
         try:
@@ -217,6 +243,7 @@ class App(customtkinter.CTk):
             max=np.round(np.max(predict)*100,2)
             self.entry.delete(0,customtkinter.END)
             self.entry.insert("end","==>"+self.classes[y_pred]+'    '+str(max)+'%')
+            self.up_label_image(self.classes[y_pred])
 
     @staticmethod
     def change_appearance_mode_event(new_appearance_mode: str):
