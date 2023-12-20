@@ -189,6 +189,7 @@ class App(customtkinter.CTk):
             
             file_path_image = filedialog.askopenfilename()
             pure_image = Image.open(file_path_image)
+            pure_image = pure_image.convert("RGB")
             w_image = WIDTH
             h_image = HEIGHT
             image = customtkinter.CTkImage(light_image=pure_image, dark_image=pure_image,size=(w_image, h_image))
